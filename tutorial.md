@@ -3,7 +3,7 @@
 ## Grupo:
 Amanda Massari - 10374292 <br>
 Nícolas Takehara - 10771443 <br>
-Isabelle Franco - 10425395 <br>
+Isabelle Franco  - 10425395 <br>
 Paulo Zorzin Gerin - 10771431
 
 
