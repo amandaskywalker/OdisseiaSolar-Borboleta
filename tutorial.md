@@ -9,7 +9,7 @@ Paulo Zorzin Gerin - 10771431
 
 ## Ideação
 
-<img width="1920" height="1080" alt="Flowchart Whiteboard in Grey Lilac Blue Simple and Minimal Style" src="https://github.com/user-attachments/assets/e6f6431a-82cc-42d7-9326-ff8f60953494" />
+<img width="1920" height="1080" alt="Flowchart Whiteboard in Grey Lilac Blue Simple and Minimal Style" src="https://github.com/user-attachments/assets/8cba7b91-069a-470b-8fd1-14d62338263f" />
 
 O projeto Odisseia Solar possui caráter extensionista, pois busca aproximar o conhecimento científico da sociedade por meio de uma iniciativa educacional voltada à comunidade. Projetos extensionistas têm como propósito conectar o conhecimento produzido no ambiente acadêmico às necessidades sociais, promovendo a troca de conhecimentos e contribuindo para a democratização do acesso à educação. Nesse contexto, o Odisseia Solar pretende utilizar a tecnologia como instrumento de divulgação científica, tornando conteúdos de astronomia mais acessíveis e interessantes para crianças em fase inicial de aprendizagem.
 
