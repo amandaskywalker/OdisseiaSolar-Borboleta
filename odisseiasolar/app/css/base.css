@@ -93,3 +93,23 @@ main {
   background: #38bdf8;
   color: #050711;
 }
+
+#btn-sobre {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  background: #1e293b;
+  color: #38bdf8;
+  border: 1px solid #38bdf8;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  text-decoration: none;
+  z-index: 90;
+  transition: background 0.2s, color 0.2s;
+}
+
+#btn-sobre:hover {
+  background: #38bdf8;
+  color: #050711;
+}
