@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Estrelas from "./components/Estrelas";
 import "./globals.css";
 
@@ -14,6 +15,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <Estrelas />
         {children}
+        <Link href="/sobre" id="btn-sobre">
+          Sobre
+        </Link>
       </body>
     </html>
   );
