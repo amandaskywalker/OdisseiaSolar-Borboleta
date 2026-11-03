@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Odisseia Solar
 
-## Getting Started
+Site educativo em Next.js (App Router) que apresenta o Sistema Solar para crianças de 4 a 6 anos, em uma jornada vertical pelo Sol, pelos planetas e pelo Cinturão de Asteroides. Cada astro tem uma página própria com informações e um quiz.
 
-First, run the development server:
+A ideação e a explicação detalhada do código estão em [`tutorial.md`](../tutorial.md).
+
+## Grupo
+
+- Amanda Massari - 10374292
+- Nícolas Takehara - 10771443
+- Isabelle Franco - 10425395
+- Paulo Zorzin Gerin - 10771431
+
+## Como executar
+
+Pré-requisito: Node.js instalado.
 
 ```bash
+cd odisseiasolar
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra [http://localhost:3000](http://localhost:3000) no navegador.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Outros comandos:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build   # gera a versão de produção
+npm run start   # serve a versão de produção
+npm run lint    # verifica o código com o ESLint
+```
 
-## Learn More
+## Conteúdo da Parte 3
 
-To learn more about Next.js, take a look at the following resources:
+### Componentização
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Os componentes reutilizáveis ficam em `app/components/`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Componente | Responsabilidade |
+|---|---|
+| `CorpoCeleste` | Desenha um astro; vira link quando recebe `href` |
+| `Cinturao` | Desenha o Cinturão Principal de Asteroides |
+| `ProgressoRolagem` | Barra de progresso e botão "↑ Topo" |
+| `Estrelas` | Fundo animado com estrelas e meteoros |
+| `Quiz` | Quiz interativo na página de cada astro |
 
-## Deploy on Vercel
+### Rotas
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Rota | Tipo | Arquivo |
+|---|---|---|
+| `/` | Simples | `app/page.tsx` |
+| `/planetas/[slug]` (ex.: `/planetas/marte`) | Dinâmica | `app/planetas/[slug]/page.tsx` |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+A rota dinâmica usa `generateStaticParams` para gerar uma página estática por astro e `notFound()` para slugs inexistentes.
+
+## Estrutura de pastas
+
+```
+odisseiasolar/
+└── app/
+    ├── layout.tsx                 # Layout raiz
+    ├── page.tsx                   # Rota "/"
+    ├── planetas/[slug]/page.tsx   # Rota dinâmica de cada astro
+    ├── components/                # Componentes reutilizáveis
+    ├── data/                      # Tipos e dados dos astros e do quiz
+    ├── css/                       # Estilos separados por responsabilidade
+    └── globals.css                # Importa todos os arquivos de CSS
+```
+
+## Tecnologias
+
+Next.js 16, React 19, TypeScript e Tailwind CSS 4.
