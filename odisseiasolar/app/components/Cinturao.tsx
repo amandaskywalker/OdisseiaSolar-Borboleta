@@ -1,23 +1,17 @@
+import styles from "./Cinturao.module.css";
+
 const TOTAL_ROCHAS = 35;
 
 export default function Cinturao() {
   return (
-    <section className="item item-cinturao">
-      <section className="faixa-asteroides" aria-label="Cinturão de Asteroides">
-        <span className="faixa-nevoa-orbital" />
-        <span className="faixa-linha-guia" />
-        <span className="enxame-constelacao-1" />
-        <span className="enxame-constelacao-2" />
-        <span className="enxame-constelacao-3" />
+    <section className={styles.itemCinturao}>
+      <div className={styles.faixaAsteroides} aria-label="Cinturão de Asteroides">
         {Array.from({ length: TOTAL_ROCHAS }, (_, i) => (
-          <span key={i} className={`rocha r-${i + 1}`} />
+          <span key={i} className={styles.rocha} />
         ))}
-      </section>
-      <h2>Cinturão Principal de Asteroides</h2>
-      <p>
-        329 a 478 milhões de km do Sol • Faixa de detritos rochosos e
-        planetesimais entre as órbitas de Marte e Júpiter
-      </p>
+      </div>
+      <h2 className={styles.titulo}>Cinturão Principal de Asteroides</h2>
+      <p className={styles.subtitulo}>329 a 478 milhões de km do Sol</p>
     </section>
   );
 }
