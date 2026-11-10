@@ -1,0 +1,23 @@
+.barraProgresso {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  z-index: 100;
+  transition: width 0.1s linear;
+}
+
+.btnTopo {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 0.75rem 1rem;
+  background-color: #1e293b;
+  color: #ffffff;
+  border: 1px solid #38bdf8;
+  border-radius: 9999px;
+  cursor: pointer;
+  z-index: 90;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
