@@ -1,7 +1,7 @@
 "use client";
-
 import { useState } from "react";
 import { perguntasPorAstro } from "../data/quiz";
+import styles from "./Quiz.module.css";
 
 export default function Quiz({ nomeAstro }: { nomeAstro: string }) {
   const perguntas = perguntasPorAstro[nomeAstro];
@@ -15,9 +15,9 @@ export default function Quiz({ nomeAstro }: { nomeAstro: string }) {
   const concluido = indice >= perguntas.length;
   const q = perguntas[indice];
   const respondida = escolhida !== null;
-  const ultima = indice === perguntas.length - 1;
 
   function responder(idx: number) {
+    if (respondida) return;
     setEscolhida(idx);
     if (idx === q.correta) setAcertos(acertos + 1);
   }
@@ -28,68 +28,59 @@ export default function Quiz({ nomeAstro }: { nomeAstro: string }) {
     setDicaAberta(false);
   }
 
-  function classeOpcao(idx: number) {
-    if (idx === q.correta && respondida) return "quiz-btn-opcao quiz-opcao-correta";
-    if (idx === escolhida) return "quiz-btn-opcao quiz-opcao-errada";
-    return "quiz-btn-opcao";
-  }
-
   return (
-    <div className="quiz-area">
-      <p className="quiz-titulo">🚀 Desafio do Astronauta</p>
-      <p className="quiz-progresso">
-        {concluido
-          ? "Desafio concluído!"
-          : `Pergunta ${indice + 1} de ${perguntas.length}`}
-      </p>
+    <div className={styles.containerQuiz}>
+      <h3 className={styles.titulo}>Desafio Espacial: {nomeAstro}</h3>
 
       {concluido ? (
-        <p className="quiz-resultado">
-          Você acertou {acertos} de {perguntas.length} perguntas sobre {nomeAstro}!{" "}
-          {acertos === perguntas.length
-            ? "Mandou muito bem, explorador! 🌟"
-            : "Continue explorando o espaço! 🚀"}
-        </p>
+        <div className={styles.resultado}>
+          <h4>Parabéns, Explorador!</h4>
+          <p>Você acertou {acertos} de {perguntas.length} perguntas!</p>
+          <button className={styles.btnAcao} onClick={() => { setIndice(0); setAcertos(0); setEscolhida(null); }}>
+            Tentar Novamente
+          </button>
+        </div>
       ) : (
-        <>
-          <p className="quiz-pergunta">{q.pergunta}</p>
-          {!respondida && !dicaAberta && (
-            <button type="button" className="quiz-btn-dica" onClick={() => setDicaAberta(true)}>
-              💡 Mostrar dica
-            </button>
-          )}
-          {dicaAberta && <p className="quiz-dica">{q.dica}</p>}
-
-          <div className="quiz-opcoes">
-            {q.opcoes.map((opcao, idx) => (
-              <button
-                key={opcao}
-                type="button"
-                className={classeOpcao(idx)}
-                disabled={respondida}
-                onClick={() => responder(idx)}
-              >
-                {opcao}
-              </button>
-            ))}
+        <div className={styles.perguntaCard}>
+          <p className={styles.enunciado}>{q.pergunta}</p>
+          <div className={styles.opcoesGrid}>
+            {q.opcoes.map((opcao, idx) => {
+              let classeBotao = styles.btnOpcao;
+              if (respondida) {
+                if (idx === q.correta) classeBotao += ` ${styles.correta}`;
+                else if (idx === escolhida) classeBotao += ` ${styles.errada}`;
+              }
+              return (
+                <button
+                  key={idx}
+                  className={classeBotao}
+                  onClick={() => responder(idx)}
+                  disabled={respondida}
+                >
+                  {opcao}
+                </button>
+              );
+            })}
           </div>
 
           {respondida && (
-            <>
-              <p className="quiz-feedback">
-                {escolhida === q.correta ? (
-                  <strong>✅ Acertou!</strong>
-                ) : (
-                  <strong>❌ Quase! A resposta certa era &quot;{q.opcoes[q.correta]}&quot;.</strong>
-                )}{" "}
-                {q.justificativa}
-              </p>
-              <button type="button" className="quiz-btn-proxima" onClick={proxima}>
-                {ultima ? "Ver resultado" : "Próxima pergunta"}
+            <div className={styles.feedback}>
+              <p>{q.justificativa}</p>
+              <button className={styles.btnAcao} onClick={proxima}>
+                Próxima Pergunta →
               </button>
-            </>
+            </div>
           )}
-        </>
+
+          {!respondida && q.dica && (
+            <div className={styles.secaoDica}>
+              <button className={styles.btnDica} onClick={() => setDicaAberta(!dicaAberta)}>
+                {dicaAberta ? "Esconder Dica" : "💡 Ver Dica"}
+              </button>
+              {dicaAberta && <p className={styles.textoDica}>{q.dica}</p>}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
