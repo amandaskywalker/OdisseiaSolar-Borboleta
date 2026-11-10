@@ -1,6 +1,6 @@
 "use client";
-
 import { useEffect, useState } from "react";
+import styles from "./ProgressoRolagem.module.css";
 
 export default function ProgressoRolagem() {
   const [progresso, setProgresso] = useState(0);
@@ -18,12 +18,10 @@ export default function ProgressoRolagem() {
 
   return (
     <>
-      <section id="progresso" style={{ width: `${progresso}%` }} />
+      <div className={styles.barraProgresso} style={{ width: `${progresso}%` }} />
       {mostrarTopo && (
         <button
-          id="btn-topo"
-          style={{ display: "block" }}
-          aria-label="Voltar ao topo"
+          className={styles.btnTopo}
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
           ↑ Topo
