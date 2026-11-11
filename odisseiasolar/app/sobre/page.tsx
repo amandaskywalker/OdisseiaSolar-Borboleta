@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import styles from "../components/CardPagina.module.css";
 
 export const metadata: Metadata = {
   title: "Sobre",
@@ -7,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function Sobre() {
   return (
-    <section className="card-pagina">
+    <section className={styles.cardPagina}>
       <h1>Sobre o Odisseia Solar</h1>
       <p>
         O Odisseia Solar é um projeto de caráter extensionista que busca
@@ -35,7 +36,7 @@ export default function Sobre() {
         <li>Paulo Zorzin Gerin — 10771431</li>
       </ul>
 
-      <Link href="/" className="voltar">
+      <Link href="/" className={styles.voltar}>
         ← Voltar ao início
       </Link>
     </section>
