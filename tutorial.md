@@ -43,14 +43,22 @@ Assim, a ideação do Odisseia Solar fundamenta-se na integração entre educaç
 
 ```
 odisseiasolar/
+├── next.config.ts                # Configuração do Next.js
 └── app/
-    ├── layout.tsx              # Layout raiz (HTML, <head>, fundo estrelado)
-    ├── page.tsx                # Página inicial ("/") — a jornada vertical
-    ├── globals.css             # Importa todos os arquivos de CSS
-    ├── css/                    # Estilos separados por responsabilidade
-    ├── components/             # Componentes React reutilizáveis
-    ├── data/                   # "Banco de dados" estático (TypeScript)
-    └── planetas/[slug]/page.tsx  # Rota dinâmica de cada astro
+    ├── layout.tsx                # Layout raiz (HTML, <head>, fundo estrelado)
+    ├── page.tsx                  # Página inicial ("/") — a jornada vertical
+    ├── page.module.css           # Estilos da página inicial
+    ├── globals.css               # Estilos globais (reset, body, header, botão "Sobre")
+    ├── components/               # Componentes React + o CSS Module de cada um
+    │   ├── CorpoCeleste.tsx / CorpoCeleste.module.css
+    │   ├── Cinturao.tsx / Cinturao.module.css
+    │   ├── Quiz.tsx / Quiz.module.css
+    │   ├── ProgressoRolagem.tsx / ProgressoRolagem.module.css
+    │   ├── Estrelas.tsx / Estrelas.module.css
+    │   └── CardPagina.module.css # Card usado na página do astro e na página "Sobre"
+    ├── data/                     # "Banco de dados" estático (TypeScript)
+    ├── planetas/[slug]/page.tsx  # Rota dinâmica de cada astro
+    └── sobre/page.tsx            # Página "Sobre" (rota simples)
 ```
 
 A ideia central é: **a UI (componentes) nunca contém dados fixos sobre os planetas** — ela sempre recebe esses dados de `app/data/`. Isso é o que o projeto chama, na seção de Ideação, de preparar o terreno para uma futura API: hoje os dados estão em um arquivo TypeScript, mas poderiam vir de uma rota `/api` sem que os componentes precisassem mudar.
@@ -140,11 +148,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <Estrelas />
         {children}
+        <Link href="/sobre" id="btn-sobre">
+          Sobre
+        </Link>
       </body>
     </html>
   );
 }
 ```
+
+O link "Sobre" fica no layout para aparecer fixo em todas as páginas. Como ele não pertence a nenhum componente específico, o estilo dele (`#btn-sobre`) fica no `globals.css`.
 
 
 ### 4. Desenhando um astro — `app/components/CorpoCeleste.tsx`
@@ -152,10 +165,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
 Este é o componente mais reaproveitado do projeto: ele é usado tanto na timeline da home quanto no topo da página individual de cada planeta.
 
 ```tsx
+import styles from "./CorpoCeleste.module.css";
+
 export default function CorpoCeleste({ astro, href }: Props) {
-  const classe = `planeta ${astro.classe}`;
+  const classe = `${styles.planeta} ${styles[astro.classe]}`;
   const partes = astro.partes.map((p) => (
-    <span key={p.classe} className={p.classe} title={p.titulo} />
+    <span key={p.classe} className={styles[p.classe]} title={p.titulo} />
   ));
 
   return href ? (
@@ -168,15 +183,19 @@ export default function CorpoCeleste({ astro, href }: Props) {
 }
 ```
 
+O campo `classe` de cada astro (por exemplo `"saturno"`) e de cada parte (por exemplo `"lua-tita"`) vem de `astros.ts` e é usado como **chave** do objeto `styles`: `styles["saturno"]`, `styles["lua-tita"]`. Assim, os dados continuam guardando nomes simples, e o CSS Module converte esses nomes nas classes reais (veja a seção 9).
+
 
 ### 5. Página inicial — `app/page.tsx`
 
 ```tsx
+import styles from "./page.module.css";
+
 const ANTES_DO_CINTURAO = 5;
 
 function ItemAstro({ astro }: { astro: (typeof astros)[number] }) {
   return (
-    <section className="item">
+    <section className={styles.itemAstro}>
       <CorpoCeleste astro={astro} href={`/planetas/${astro.slug}`} />
       <h2>{astro.tituloHome}</h2>
       <p>{astro.detalheHome}</p>
@@ -186,10 +205,10 @@ function ItemAstro({ astro }: { astro: (typeof astros)[number] }) {
 
 export default function Home() {
   return (
-    <>
+    <div className={styles.containerHome}>
       <ProgressoRolagem />
       <header>...</header>
-      <main>
+      <main className={styles.jornadaMain}>
         {astros.slice(0, ANTES_DO_CINTURAO).map((a) => (
           <ItemAstro key={a.slug} astro={a} />
         ))}
@@ -198,7 +217,7 @@ export default function Home() {
           <ItemAstro key={a.slug} astro={a} />
         ))}
       </main>
-    </>
+    </div>
   );
 }
 ```
@@ -213,19 +232,32 @@ O array é dividido em duas partes com `.slice()` porque o Cinturão de Asteroid
 O nome da pasta entre colchetes, `[slug]`, é a convenção do Next.js App Router para criar uma **rota dinâmica**: uma única página (`page.tsx`) atende a `/planetas/marte`, `/planetas/jupiter`, `/planetas/sol`, etc., trocando apenas o parâmetro `slug` na URL.
 
 ```tsx
-const buscarAstro = (slug: string) => astros.find((a) => a.slug === slug);
+import { Fragment, Suspense } from "react";
+import styles from "../../components/CardPagina.module.css";
+import type { Astro } from "../../data/tipos";
+
+const buscarAstro = (slug: string): Astro | undefined =>
+  astros.find((a) => a.slug === slug);
 
 export function generateStaticParams() {
   return astros.map(({ slug }) => ({ slug }));
 }
 
-export default async function PaginaAstro({ params }: PageProps<"/planetas/[slug]">) {
+export default function PaginaAstro({ params }: PageProps<"/planetas/[slug]">) {
+  return (
+    <Suspense>
+      <ConteudoAstro params={params} />
+    </Suspense>
+  );
+}
+
+async function ConteudoAstro({ params }: Pick<PageProps<"/planetas/[slug]">, "params">) {
   const { slug } = await params;
   const astro = buscarAstro(slug);
   if (!astro) notFound();
 
   return (
-    <section className="card-pagina">
+    <section className={styles.cardPagina}>
       <CorpoCeleste astro={astro} />
       <h1>{astro.nome}</h1>
       <p>{astro.descricao}</p>
@@ -243,7 +275,7 @@ export default async function PaginaAstro({ params }: PageProps<"/planetas/[slug
         </Fragment>
       ))}
 
-      <Link href="/" className="voltar">← Voltar ao início</Link>
+      <Link href="/" className={styles.voltar}>← Voltar ao início</Link>
       <Quiz nomeAstro={astro.nome} />
     </section>
   );
@@ -251,7 +283,8 @@ export default async function PaginaAstro({ params }: PageProps<"/planetas/[slug
 ```
 
 Detalhando cada parte:
-- `buscarAstro(slug)` usa `Array.find()` para localizar, dentro do array `astros`, o objeto cujo `slug` bate com o parâmetro vindo da URL (ex.: acessar `/planetas/marte` resulta em `slug === "marte"`).
+- `buscarAstro(slug)` usa `Array.find()` para localizar, dentro do array `astros`, o objeto cujo `slug` bate com o parâmetro vindo da URL (ex.: acessar `/planetas/marte` resulta em `slug === "marte"`). O tipo de retorno `Astro | undefined` está escrito explicitamente para o editor (VS Code) saber o formato do astro encontrado e, com isso, também o tipo de `secao` e `item` usados mais abaixo.
+- A página foi dividida em dois componentes. `PaginaAstro` só envolve o conteúdo em um `<Suspense>`, e `ConteudoAstro` faz o `await params` e monta a página. Isso é necessário porque o projeto ativa `cacheComponents` e `partialPrefetching` no `next.config.ts`: com essas opções, o Next.js monta antes um "esqueleto" estático da página e completa o resto depois. Se o `await params` ficasse fora de um `<Suspense>`, o Next não conseguiria mostrar nada antes de saber o `slug` e exibiria um aviso apontando essa linha.
 - `generateStaticParams()` é uma função especial do Next.js: ela diz, em tempo de build, **quais valores de `slug` existem** (um para cada astro), para que o Next gere uma página HTML estática para cada planeta antecipadamente, em vez de montar tudo sob demanda a cada acesso. Isso deixa a navegação entre planetas instantânea.
 - `if (!astro) notFound()` trata o caso de alguém acessar uma URL com um slug inexistente (ex.: `/planetas/plutao`, que ainda não existe nos dados): em vez de a página quebrar, o Next.js mostra a página de erro 404 padrão.
 - `astro.secoes.map(...)` novamente evita repetição: cada astro pode ter um número diferente de seções (Marte tem uma seção extra sobre suas luas; Mercúrio não tem), e o mesmo bloco de JSX serve para todas, simplesmente percorrendo o array de seções e, dentro de cada uma, o array de itens.
@@ -266,6 +299,7 @@ O projeto usa dois hooks do React para tornar a página dinâmica: `useState` (g
 ```tsx
 "use client";
 import { useEffect, useState } from "react";
+import styles from "./ProgressoRolagem.module.css";
 
 export default function ProgressoRolagem() {
   const [progresso, setProgresso] = useState(0);
@@ -283,9 +317,13 @@ export default function ProgressoRolagem() {
 
   return (
     <>
-      <section id="progresso" style={{ width: `${progresso}%` }} />
+      <section className={styles.barraProgresso} style={{ width: `${progresso}%` }} />
       {mostrarTopo && (
-        <button id="btn-topo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+        <button
+          className={styles.btnTopo}
+          aria-label="Voltar ao topo"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
           ↑ Topo
         </button>
       )}
@@ -304,6 +342,7 @@ export default function ProgressoRolagem() {
 ```tsx
 "use client";
 import { useEffect, useRef } from "react";
+import styles from "./Estrelas.module.css";
 
 export default function Estrelas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -319,7 +358,7 @@ export default function Estrelas() {
     };
   }, []);
 
-  return <canvas id="espaco" ref={canvasRef} />;
+  return <canvas id="espaco" ref={canvasRef} className={styles.canvasEstrelas} />;
 }
 ```
 
@@ -331,6 +370,7 @@ Aqui, `useRef` guarda uma referência direta ao elemento `<canvas>` do DOM (sem 
 "use client";
 import { useState } from "react";
 import { perguntasPorAstro } from "../data/quiz";
+import styles from "./Quiz.module.css";
 
 export default function Quiz({ nomeAstro }: { nomeAstro: string }) {
   const perguntas = perguntasPorAstro[nomeAstro];
@@ -355,6 +395,12 @@ export default function Quiz({ nomeAstro }: { nomeAstro: string }) {
     setEscolhida(null);
     setDicaAberta(false);
   }
+
+  function classeOpcao(idx: number) {
+    if (idx === q.correta && respondida) return `${styles.btnOpcao} ${styles.opcaoCorreta}`;
+    if (idx === escolhida) return `${styles.btnOpcao} ${styles.opcaoErrada}`;
+    return styles.btnOpcao;
+  }
   // ...
 }
 ```
@@ -369,14 +415,19 @@ Este componente mostra bem o papel do `useState` em controlar **toda a lógica d
 ### 8. Componente sem estado, só com dados fixos — `app/components/Cinturao.tsx`
 
 ```tsx
+import styles from "./Cinturao.module.css";
+
 const TOTAL_ROCHAS = 35;
 
 export default function Cinturao() {
   return (
-    <section className="item item-cinturao">
-      <section className="faixa-asteroides" aria-label="Cinturão de Asteroides">
+    <section className={styles.itemCinturao}>
+      <section className={styles.faixaAsteroides} aria-label="Cinturão de Asteroides">
+        <span className={styles["faixa-nevoa-orbital"]} />
+        <span className={styles["faixa-linha-guia"]} />
+        {/* ... enxames de estrelas ... */}
         {Array.from({ length: TOTAL_ROCHAS }, (_, i) => (
-          <span key={i} className={`rocha r-${i + 1}`} />
+          <span key={i} className={`${styles.rocha} ${styles[`r-${i + 1}`]}`} />
         ))}
       </section>
       <h2>Cinturão Principal de Asteroides</h2>
@@ -386,23 +437,44 @@ export default function Cinturao() {
 }
 ```
 
-`Array.from({ length: 35 }, (_, i) => ...)` é um jeito de gerar rapidamente uma lista de 35 elementos numerados (de `r-1` a `r-35`) sem escrever 35 linhas de JSX manualmente — cada `<span className="rocha r-N" />` recebe depois, via CSS, uma posição e tamanho pseudoaleatórios diferentes, criando o efeito visual de um cinturão de asteroides disperso.
+`Array.from({ length: 35 }, (_, i) => ...)` é um jeito de gerar rapidamente uma lista de 35 elementos numerados (de `r-1` a `r-35`) sem escrever 35 linhas de JSX manualmente — cada `<span>` recebe as classes `rocha` e `r-N` do CSS Module, e cada classe `r-N` define uma posição e um tamanho diferentes, criando o efeito visual de um cinturão de asteroides disperso.
 
-### 9. CSS organizado por responsabilidade — `app/css/` e `app/globals.css`
+### 9. Estilos com CSS Modules — `*.module.css` e `app/globals.css`
 
-Em vez de um único arquivo gigante de estilos, o CSS foi dividido por assunto (`planetas.css`, `luas.css`, `cinturao-asteroides.css`, `quiz.css`, `pagina-planeta.css`, `responsivo.css`, `base.css`), e todos são reunidos em `globals.css` através de `@import`:
+O CSS do projeto usa **CSS Modules**. Cada componente tem seu próprio arquivo `.module.css`, guardado ao lado dele, com apenas os estilos que ele usa:
 
-```css
-@import "./css/base.css";
-@import "./css/planetas.css";
-@import "./css/luas.css";
-@import "./css/cinturao-asteroides.css";
-@import "./css/pagina-planeta.css";
-@import "./css/quiz.css";
-@import "./css/responsivo.css";
+| Arquivo | O que estiliza |
+|---|---|
+| `components/CorpoCeleste.module.css` | Sol, planetas, anéis e luas (inclui o responsivo de Saturno e Urano) |
+| `components/Cinturao.module.css` | Faixa do cinturão, enxames de estrelas e as 35 rochas (inclui o responsivo da faixa) |
+| `components/Quiz.module.css` | Caixa do quiz, botões de opção, dica, feedback e resultado |
+| `components/ProgressoRolagem.module.css` | Barra de progresso e botão "↑ Topo" |
+| `components/Estrelas.module.css` | Canvas do fundo estrelado |
+| `components/CardPagina.module.css` | Card das páginas de astro e da página "Sobre", e o botão "Voltar ao início" |
+| `page.module.css` | Layout da jornada na página inicial |
+| `globals.css` | Estilos globais: reset (`*`), `body`, `header` e o botão fixo "Sobre" |
+
+**Como funciona:** o componente importa o arquivo como um objeto (`import styles from "./Quiz.module.css"`) e usa as classes por meio dele (`className={styles.btnOpcao}`). No build, o Next.js transforma cada nome de classe em um nome único, por exemplo `.btnOpcao` vira algo como `KCVaTq_btnOpcao`. Com isso, uma classe de um componente nunca entra em conflito com outra de mesmo nome em outro arquivo.
+
+- Nomes com hífen são acessados com colchetes: `styles["lua-tita"]`, `styles["r-12"]`.
+- Os nomes que vêm dos dados (`astro.classe`, `parte.classe`) são usados do mesmo jeito: `styles[astro.classe]`.
+- Na página de cada astro, o `CorpoCeleste` é renderizado como `<section>`; na home, como link `<a>`. Por isso as regras `section.saturno` e `section.urano` em `CorpoCeleste.module.css` deixam um espaço um pouco menor abaixo desses planetas só na página do astro.
+
+**Configuração necessária no `next.config.ts`:** o projeto tem uma regra do Turbopack que processa todos os arquivos `*.css`. Sem um ajuste, essa regra também pegava os `*.module.css` e os tratava como CSS comum, e então todo `styles.xxx` vinha `undefined` (os planetas apareciam sem estilo). A regra recebeu uma condição para ignorar os CSS Modules:
+
+```ts
+turbopack: {
+  rules: {
+    "*.css": {
+      condition: { not: { path: /\.module\.css$/ } },
+      loaders: ["@tailwindcss/turbopack"],
+      as: "*.css",
+    },
+  },
+},
 ```
 
-Essa separação segue o mesmo princípio usado no código React: cada arquivo tem uma única responsabilidade (estilos de planetas separados de estilos de luas, separados de estilos do quiz), o que facilita achar e alterar uma regra específica sem precisar vasculhar um arquivo CSS enorme.
+Essa organização segue o mesmo princípio do código React: cada componente leva junto os seus estilos. Para alterar a aparência do quiz, por exemplo, basta abrir `Quiz.module.css`, sem procurar em arquivos de outros assuntos.
 
 ### Resumo das decisões técnicas
 
@@ -412,7 +484,9 @@ Essa separação segue o mesmo princípio usado no código React: cada arquivo t
 | Tipagem com `type` | `app/data/tipos.ts` | TypeScript aponta erros de dados incompletos antes de rodar o site |
 | Rota dinâmica `[slug]` | `app/planetas/[slug]/page.tsx` | Uma página só atende a todos os planetas, evitando 9 arquivos quase idênticos |
 | `generateStaticParams` | `app/planetas/[slug]/page.tsx` | Gera as páginas de cada planeta como HTML estático em tempo de build |
+| `await params` dentro de `<Suspense>` | `app/planetas/[slug]/page.tsx` | Exigência do `cacheComponents` + `partialPrefetching`: permite ao Next montar o esqueleto da página antes de saber o `slug` |
 | `useState` | `ProgressoRolagem`, `Quiz` | Guarda valores que mudam com a interação (progresso da rolagem, pergunta atual, placar) |
 | `useEffect` | `ProgressoRolagem`, `Estrelas` | Reage a eventos do navegador (`scroll`, `resize`) e a animações contínuas (`requestAnimationFrame`) |
 | `.map()` sobre arrays de dados | `page.tsx`, `CorpoCeleste`, página do astro | Evita repetir JSX manualmente para cada planeta, lua ou seção de conteúdo |
-| CSS modular | `app/css/*.css` | Cada arquivo cuida de um único aspecto visual, facilitando manutenção |
+| CSS Modules | `*.module.css` ao lado de cada componente | Cada componente tem seus próprios estilos, com nomes de classe únicos que não entram em conflito |
+| Condição na regra `*.css` do Turbopack | `next.config.ts` | Impede que a regra trate os `*.module.css` como CSS comum, o que deixaria as classes `undefined` |
