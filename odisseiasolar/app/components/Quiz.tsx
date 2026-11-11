@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { perguntasPorAstro } from "../data/quiz";
+import styles from "./Quiz.module.css";
 
 export default function Quiz({ nomeAstro }: { nomeAstro: string }) {
   const perguntas = perguntasPorAstro[nomeAstro];
@@ -29,22 +30,22 @@ export default function Quiz({ nomeAstro }: { nomeAstro: string }) {
   }
 
   function classeOpcao(idx: number) {
-    if (idx === q.correta && respondida) return "quiz-btn-opcao quiz-opcao-correta";
-    if (idx === escolhida) return "quiz-btn-opcao quiz-opcao-errada";
-    return "quiz-btn-opcao";
+    if (idx === q.correta && respondida) return `${styles.btnOpcao} ${styles.opcaoCorreta}`;
+    if (idx === escolhida) return `${styles.btnOpcao} ${styles.opcaoErrada}`;
+    return styles.btnOpcao;
   }
 
   return (
-    <div className="quiz-area">
-      <p className="quiz-titulo">🚀 Desafio do Astronauta</p>
-      <p className="quiz-progresso">
+    <div className={styles.quizArea}>
+      <p className={styles.titulo}>🚀 Desafio do Astronauta</p>
+      <p className={styles.progresso}>
         {concluido
           ? "Desafio concluído!"
           : `Pergunta ${indice + 1} de ${perguntas.length}`}
       </p>
 
       {concluido ? (
-        <p className="quiz-resultado">
+        <p className={styles.resultado}>
           Você acertou {acertos} de {perguntas.length} perguntas sobre {nomeAstro}!{" "}
           {acertos === perguntas.length
             ? "Mandou muito bem, explorador! 🌟"
@@ -52,15 +53,15 @@ export default function Quiz({ nomeAstro }: { nomeAstro: string }) {
         </p>
       ) : (
         <>
-          <p className="quiz-pergunta">{q.pergunta}</p>
+          <p className={styles.pergunta}>{q.pergunta}</p>
           {!respondida && !dicaAberta && (
-            <button type="button" className="quiz-btn-dica" onClick={() => setDicaAberta(true)}>
+            <button type="button" className={styles.btnDica} onClick={() => setDicaAberta(true)}>
               💡 Mostrar dica
             </button>
           )}
-          {dicaAberta && <p className="quiz-dica">{q.dica}</p>}
+          {dicaAberta && <p className={styles.dica}>{q.dica}</p>}
 
-          <div className="quiz-opcoes">
+          <div className={styles.opcoes}>
             {q.opcoes.map((opcao, idx) => (
               <button
                 key={opcao}
@@ -76,7 +77,7 @@ export default function Quiz({ nomeAstro }: { nomeAstro: string }) {
 
           {respondida && (
             <>
-              <p className="quiz-feedback">
+              <p className={styles.feedback}>
                 {escolhida === q.correta ? (
                   <strong>✅ Acertou!</strong>
                 ) : (
@@ -84,7 +85,7 @@ export default function Quiz({ nomeAstro }: { nomeAstro: string }) {
                 )}{" "}
                 {q.justificativa}
               </p>
-              <button type="button" className="quiz-btn-proxima" onClick={proxima}>
+              <button type="button" className={styles.btnProxima} onClick={proxima}>
                 {ultima ? "Ver resultado" : "Próxima pergunta"}
               </button>
             </>

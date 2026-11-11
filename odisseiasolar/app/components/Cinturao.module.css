@@ -1,10 +1,25 @@
-.item-cinturao {
+/* Mesmo layout de .itemAstro (page.module.css), com ajustes do cinturão */
+.itemCinturao {
   min-height: 160vh;
   width: 100%;
   padding: 120px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
 }
 
-.faixa-asteroides {
+.itemCinturao h2 {
+  font-size: 1.8rem;
+}
+
+.itemCinturao p {
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.faixaAsteroides {
   position: relative;
   width: 92vw;
   max-width: 1300px;
@@ -555,4 +570,20 @@
   width: 6px;
   height: 5px;
   background: linear-gradient(135deg, #a8a29e 0%, #292524 100%);
+}
+
+/* ===== Responsivo ===== */
+
+@media (max-width: 768px) {
+  .faixaAsteroides {
+    transform: rotate(-1.5deg) scale(0.92);
+    width: 94vw;
+  }
+}
+
+@media (max-width: 500px) {
+  .faixaAsteroides {
+    transform: rotate(-1deg) scale(0.75);
+    width: 100vw;
+  }
 }

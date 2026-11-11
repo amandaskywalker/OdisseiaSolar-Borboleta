@@ -1,13 +1,14 @@
 import Link from "next/link";
 import type { Astro } from "../data/tipos";
+import styles from "./CorpoCeleste.module.css";
 
 type Props = { astro: Astro; href?: string };
 
 // Desenho do astro em CSS. Com `href` vira link (home); sem, é só a ilustração (página do astro).
 export default function CorpoCeleste({ astro, href }: Props) {
-  const classe = `planeta ${astro.classe}`;
+  const classe = `${styles.planeta} ${styles[astro.classe]}`;
   const partes = astro.partes.map((p) => (
-    <span key={p.classe} className={p.classe} title={p.titulo} />
+    <span key={p.classe} className={styles[p.classe]} title={p.titulo} />
   ));
 
   return href ? (

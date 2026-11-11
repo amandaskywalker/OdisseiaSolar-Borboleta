@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-
+import styles from "./Estrelas.module.css";
 type Meteoro = { x: number; y: number; len: number; speed: number; life: number };
 
 export default function Estrelas() {
@@ -77,5 +77,5 @@ export default function Estrelas() {
     };
   }, []);
 
-  return <canvas id="espaco" ref={canvasRef} />;
+  return <canvas id="espaco" ref={canvasRef} className={styles.canvasEstrelas} />;
 }

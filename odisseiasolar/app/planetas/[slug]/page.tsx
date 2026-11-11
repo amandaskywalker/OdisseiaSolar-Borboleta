@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
-import { Fragment } from "react";
+import { Fragment, Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CorpoCeleste from "../../components/CorpoCeleste";
 import Quiz from "../../components/Quiz";
+import styles from "../../components/CardPagina.module.css";
 import { astros } from "../../data/astros";
+import type { Astro } from "../../data/tipos";
 
-const buscarAstro = (slug: string) => astros.find((a) => a.slug === slug);
+const buscarAstro = (slug: string): Astro | undefined =>
+  astros.find((a) => a.slug === slug);
 
 export function generateStaticParams() {
   return astros.map(({ slug }) => ({ slug }));
@@ -19,13 +22,22 @@ export async function generateMetadata({
   return { title: buscarAstro(slug)?.nome };
 }
 
-export default async function PaginaAstro({ params }: PageProps<"/planetas/[slug]">) {
+// O `await params` fica dentro do <Suspense> (exigência do cacheComponents + partialPrefetching).
+export default function PaginaAstro({ params }: PageProps<"/planetas/[slug]">) {
+  return (
+    <Suspense>
+      <ConteudoAstro params={params} />
+    </Suspense>
+  );
+}
+
+async function ConteudoAstro({ params }: Pick<PageProps<"/planetas/[slug]">, "params">) {
   const { slug } = await params;
   const astro = buscarAstro(slug);
   if (!astro) notFound();
 
   return (
-    <section className="card-pagina">
+    <section className={styles.cardPagina}>
       <CorpoCeleste astro={astro} />
       <h1>{astro.nome}</h1>
       <p>{astro.descricao}</p>
@@ -43,7 +55,7 @@ export default async function PaginaAstro({ params }: PageProps<"/planetas/[slug
         </Fragment>
       ))}
 
-      <Link href="/" className="voltar">
+      <Link href="/" className={styles.voltar}>
         ← Voltar ao início
       </Link>
       <Quiz nomeAstro={astro.nome} />
