@@ -1,0 +1,41 @@
+.caixa {
+  width: min(580px, 90%);
+  margin: 40px auto 0;
+  padding: 20px 22px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px dashed #38bdf8;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.caixa h2 {
+  font-size: 1.3rem;
+  color: #38bdf8;
+}
+
+.caixa h3 {
+  font-size: 1.1rem;
+  color: #ffd166;
+}
+
+.texto {
+  width: 100%;
+  text-align: left;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.carregando,
+.fonte {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.fonte a {
+  color: #38bdf8;
+}

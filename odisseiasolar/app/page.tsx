@@ -1,5 +1,6 @@
 import Cinturao from "./components/Cinturao";
 import CorpoCeleste from "./components/CorpoCeleste";
+import CuriosidadeDoDia from "./components/CuriosidadeDoDia";
 import ProgressoRolagem from "./components/ProgressoRolagem";
 import { astros } from "./data/astros";
 import styles from "./page.module.css";
@@ -25,6 +26,7 @@ export default function Home() {
         <h1>Sistema Solar</h1>
         <p>Role a página para baixo para ver o Sol e os planetas em ordem.</p>
       </header>
+      <CuriosidadeDoDia />
 
       <main className={styles.jornadaMain}>
         {astros.slice(0, ANTES_DO_CINTURAO).map((a) => (
