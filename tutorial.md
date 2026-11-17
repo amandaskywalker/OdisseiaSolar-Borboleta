@@ -49,12 +49,14 @@ odisseiasolar/
     ├── page.tsx                  # Página inicial ("/") — a jornada vertical
     ├── page.module.css           # Estilos da página inicial
     ├── globals.css               # Estilos globais (reset, body, header, botão "Sobre")
+    ├── api/curiosidade/route.ts  # Rota de API local: curiosidade do dia (NASA) traduzida
     ├── components/               # Componentes React + o CSS Module de cada um
     │   ├── CorpoCeleste.tsx / CorpoCeleste.module.css
     │   ├── Cinturao.tsx / Cinturao.module.css
     │   ├── Quiz.tsx / Quiz.module.css
     │   ├── ProgressoRolagem.tsx / ProgressoRolagem.module.css
     │   ├── Estrelas.tsx / Estrelas.module.css
+    │   ├── CuriosidadeDoDia.tsx / CuriosidadeDoDia.module.css
     │   └── CardPagina.module.css # Card usado na página do astro e na página "Sobre"
     ├── data/                     # "Banco de dados" estático (TypeScript)
     ├── planetas/[slug]/page.tsx  # Rota dinâmica de cada astro
@@ -450,6 +452,7 @@ O CSS do projeto usa **CSS Modules**. Cada componente tem seu próprio arquivo `
 | `components/Quiz.module.css` | Caixa do quiz, botões de opção, dica, feedback e resultado |
 | `components/ProgressoRolagem.module.css` | Barra de progresso e botão "↑ Topo" |
 | `components/Estrelas.module.css` | Canvas do fundo estrelado |
+| `components/CuriosidadeDoDia.module.css` | Card da curiosidade do dia na página inicial |
 | `components/CardPagina.module.css` | Card das páginas de astro e da página "Sobre", e o botão "Voltar ao início" |
 | `page.module.css` | Layout da jornada na página inicial |
 | `globals.css` | Estilos globais: reset (`*`), `body`, `header` e o botão fixo "Sobre" |
@@ -476,6 +479,97 @@ turbopack: {
 
 Essa organização segue o mesmo princípio do código React: cada componente leva junto os seus estilos. Para alterar a aparência do quiz, por exemplo, basta abrir `Quiz.module.css`, sem procurar em arquivos de outros assuntos.
 
+### 10. API — Curiosidade do dia
+
+A página inicial mostra, logo abaixo do título, o card **"🔭 Curiosidade do dia"**. O conteúdo vem da API pública da NASA chamada **APOD** (*Astronomy Picture of the Day*), que publica todo dia um tema sobre o espaço com título e explicação. Como o texto da NASA é em inglês, ele é traduzido para o português pela API gratuita **MyMemory**, que não exige cadastro.
+
+```
+CuriosidadeDoDia.tsx  ──fetch──▶  /api/curiosidade (route.ts)  ──fetch──▶  api.nasa.gov  (texto em inglês)
+   (navegador)                       (servidor Next.js)          ──fetch──▶  api.mymemory.translated.net  (tradução)
+```
+
+**a) Rota de API local — `app/api/curiosidade/route.ts`**
+
+No App Router, um arquivo `route.ts` dentro de `app/` cria um endereço de API. Como ele está em `app/api/curiosidade/`, responde em `/api/curiosidade`. A rota tem três partes:
+
+```ts
+// 1. Busca o tema do dia na NASA
+async function buscarApod(): Promise<RespostaApod> {
+  "use cache";
+  cacheLife("hours");
+  const resposta = await fetch(URL_APOD);
+  if (!resposta.ok) throw new Error(`NASA respondeu ${resposta.status}`);
+  return resposta.json();
+}
+
+// 2. Traduz um texto do inglês para o português
+async function traduzir(texto: string): Promise<string> {
+  "use cache";
+  cacheLife("days");
+  // divide o texto em blocos de até 450 bytes e traduz cada bloco na MyMemory
+}
+
+// 3. Responde a quem acessar /api/curiosidade
+export async function GET() {
+  await connection();
+  try {
+    const apod = await buscarApod();
+    const [titulo, explicacao] = await Promise.all([traduzir(apod.title), traduzir(apod.explanation)]);
+    return Response.json({ data: apod.date, titulo, explicacao, link: ..., creditos: ... });
+  } catch {
+    return Response.json({ erro: "Não foi possível buscar a curiosidade do dia." }, { status: 502 });
+  }
+}
+```
+
+- A função `GET` é chamada quando alguém acessa `/api/curiosidade`. Ela devolve um JSON no formato `Curiosidade`, definido em `app/data/tipos.ts`.
+- Por que não chamar a NASA direto do navegador? Porque a chamada usa uma **chave de API**. Feita no servidor, a chave fica escondida, e a rota entrega ao site só o que ele precisa, já em português.
+- A MyMemory aceita no máximo **500 bytes por chamada**, e a explicação da NASA costuma ser maior. Por isso `traduzir()` junta as frases em blocos de até 450 bytes, traduz os blocos ao mesmo tempo (`Promise.all`) e depois junta o resultado.
+- **Cache:** `"use cache"` + `cacheLife(...)` guardam os resultados. O tema da NASA fica guardado por algumas horas, e cada tradução fica guardada por dias, usando o próprio texto como chave. Assim o mesmo texto nunca é traduzido duas vezes, o que respeita o limite diário gratuito da MyMemory.
+- `await connection()` faz a rota rodar só quando é acessada, e não durante o `npm run build`, para nunca "congelar" uma resposta antiga ou de erro.
+- **Quando algo falha:** cada chamada desiste depois de 10 segundos (`AbortSignal.timeout`), e, se a NASA responder com erro interno (status 5xx), a rota tenta mais uma vez. Se a NASA ou a tradução falharem (por exemplo, limite de uso estourado), o `catch` escreve o motivo no terminal do `npm run dev` e devolve a **última curiosidade que deu certo**, guardada na variável `ultimaCuriosidade`. Só se ainda não houver nenhuma é que a rota devolve status `502`.
+
+Exemplo de resposta de `/api/curiosidade`:
+
+```json
+{
+  "data": "2026-11-17",
+  "titulo": "Via Láctea e Aurora",
+  "explicacao": "Esses dois arcos gigantes estão lutando pelo controle do céu? ...",
+  "link": "https://apod.nasa.gov/apod/ap261117.html",
+  "creditos": "Nome do fotógrafo"
+}
+```
+
+**b) Componente que consome a API — `app/components/CuriosidadeDoDia.tsx`**
+
+```tsx
+"use client";
+export default function CuriosidadeDoDia() {
+  const [curiosidade, setCuriosidade] = useState<Curiosidade | null>(null);
+  const [erro, setErro] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/curiosidade")
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(setCuriosidade)
+      .catch(() => setErro(true));
+  }, []);
+
+  // mensagem de erro, ou "Procurando no espaço..." enquanto carrega, ou título, explicação, data e créditos
+}
+```
+
+- Este é o uso de `useEffect` previsto na Ideação: a **obtenção de informações** quando a página é acessada. Com `[]`, o `fetch` roda uma vez, logo que o componente aparece na tela.
+- `curiosidade` começa como `null`, e enquanto isso o card mostra "Procurando no espaço...". Quando a resposta chega, `setCuriosidade` guarda os dados e o React re-renderiza o card com o título e o texto.
+- Se a rota responder com erro, `erro` vira `true` e o card mostra "Não conseguimos buscar a curiosidade agora. Tente recarregar a página daqui a pouco.", sem afetar o resto da página.
+- O rodapé do card mostra a data, os créditos, o link para a página do dia na NASA e o aviso "tradução automática".
+- O componente é inserido em `app/page.tsx`, logo abaixo do `<header>`.
+
+**c) Chave da NASA e e-mail da MyMemory (recomendados)**
+
+Depois de criar o arquivo, reinicie o `npm run dev`. O `.gitignore` já ignora arquivos `.env*`, então a chave e o e-mail não vão para o GitHub.
+
 ### Resumo das decisões técnicas
 
 | Decisão | Onde aparece | Por quê |
@@ -486,7 +580,9 @@ Essa organização segue o mesmo princípio do código React: cada componente le
 | `generateStaticParams` | `app/planetas/[slug]/page.tsx` | Gera as páginas de cada planeta como HTML estático em tempo de build |
 | `await params` dentro de `<Suspense>` | `app/planetas/[slug]/page.tsx` | Exigência do `cacheComponents` + `partialPrefetching`: permite ao Next montar o esqueleto da página antes de saber o `slug` |
 | `useState` | `ProgressoRolagem`, `Quiz` | Guarda valores que mudam com a interação (progresso da rolagem, pergunta atual, placar) |
-| `useEffect` | `ProgressoRolagem`, `Estrelas` | Reage a eventos do navegador (`scroll`, `resize`) e a animações contínuas (`requestAnimationFrame`) |
+| `useEffect` | `ProgressoRolagem`, `Estrelas`, `CuriosidadeDoDia` | Reage a eventos do navegador (`scroll`, `resize`), a animações contínuas (`requestAnimationFrame`) e busca a curiosidade do dia quando a página abre |
 | `.map()` sobre arrays de dados | `page.tsx`, `CorpoCeleste`, página do astro | Evita repetir JSX manualmente para cada planeta, lua ou seção de conteúdo |
 | CSS Modules | `*.module.css` ao lado de cada componente | Cada componente tem seus próprios estilos, com nomes de classe únicos que não entram em conflito |
 | Condição na regra `*.css` do Turbopack | `next.config.ts` | Impede que a regra trate os `*.module.css` como CSS comum, o que deixaria as classes `undefined` |
+| Rota de API local `route.ts` | `app/api/curiosidade/route.ts` | Esconde a chave da NASA, traduz o texto para o português e, se uma API falhar, devolve a última curiosidade que deu certo |
+| `"use cache"` + `cacheLife(...)` | `app/api/curiosidade/route.ts` | O tema da NASA muda uma vez por dia e cada texto só precisa ser traduzido uma vez; o cache evita chamadas repetidas às APIs |
