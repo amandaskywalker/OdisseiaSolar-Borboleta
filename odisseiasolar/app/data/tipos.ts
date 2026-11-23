@@ -19,12 +19,10 @@ export type Pergunta = {
   justificativa: string;
 };
 
-// Formato devolvido pela rota local /api/curiosidade (dados da NASA APOD).
+// Formato devolvido pela rota local /api/curiosidade (resumo da Wikipédia em português).
 export type Curiosidade = {
   data: string;       // "AAAA-MM-DD"
   titulo: string;
-  explicacao: string; // texto original da NASA (em inglês)
-  imagem: string | null; // foto do dia (ou miniatura, quando o APOD do dia é um vídeo)
-  link: string;          // página do APOD do dia no site da NASA
-  creditos: string | null;
+  explicacao: string; // resumo do artigo da Wikipédia
+  link: string;       // artigo completo na Wikipédia
 };

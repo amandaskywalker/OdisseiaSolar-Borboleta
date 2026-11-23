@@ -29,11 +29,10 @@ export default function CuriosidadeDoDia() {
           <p className={styles.texto}>{curiosidade.explicacao}</p>
           <p className={styles.fonte}>
             {curiosidade.data.split("-").reverse().join("/")} •{" "}
-            {curiosidade.creditos && `© ${curiosidade.creditos} • `}
             <a href={curiosidade.link} target="_blank" rel="noreferrer">
-              Foto Astronômica do Dia — NASA
+              Leia mais na Wikipédia
             </a>{" "}
-            • tradução automática
+            • texto sob licença CC BY-SA
           </p>
         </>
       )}

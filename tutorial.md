@@ -37,6 +37,27 @@ Em relação ao conteúdo pedagógico, o Odisseia Solar busca apresentar as info
 
 Assim, a ideação do Odisseia Solar fundamenta-se na integração entre educação, exploração visual, interatividade e organização dos conteúdos. Ao unir uma proposta pedagógica acessível a uma experiência digital envolvente, o projeto pretende contribuir para a divulgação científica e ampliar as possibilidades de contato das crianças com a astronomia. Seu caráter extensionista reforça esse propósito ao buscar aproximar o conhecimento científico da comunidade, utilizando a tecnologia como meio para estimular a curiosidade, favorecer a aprendizagem e democratizar o acesso a conteúdos educacionais.
 
+## Como rodar o projeto
+
+O projeto usa **Next.js 16** e precisa do **Node.js 20.9 ou mais novo**. Para ver a versão instalada, rode `node -v`. Todos os comandos abaixo são executados dentro da pasta `odisseiasolar/`, onde fica o `package.json`:
+
+```bash
+cd odisseiasolar
+npm install     # instala as dependências (só na primeira vez ou depois de mudar o package.json)
+npm run dev     # inicia o site em modo de desenvolvimento
+```
+
+Depois, abra **http://localhost:3000** no navegador. A página atualiza sozinha ao salvar um arquivo. Para parar o servidor, use `Ctrl + C` no terminal.
+
+| Comando | Para que serve |
+|---|---|
+| `npm run dev` | Roda o site em modo de desenvolvimento |
+| `npm run build` | Gera a versão otimizada para publicação |
+| `npm run start` | Roda a versão gerada pelo `build` |
+| `npm run lint` | Procura problemas no código com o ESLint |
+
+Não é preciso configurar chave nem arquivo `.env`: a única API externa usada, a da Wikipédia, é gratuita e aberta.
+
 ## Explicação do Código
 
 ### Estrutura geral de pastas
@@ -49,7 +70,7 @@ odisseiasolar/
     ├── page.tsx                  # Página inicial ("/") — a jornada vertical
     ├── page.module.css           # Estilos da página inicial
     ├── globals.css               # Estilos globais (reset, body, header, botão "Sobre")
-    ├── api/curiosidade/route.ts  # Rota de API local: curiosidade do dia (NASA) traduzida
+    ├── api/curiosidade/route.ts  # Rota de API local: curiosidade do dia (Wikipédia)
     ├── components/               # Componentes React + o CSS Module de cada um
     │   ├── CorpoCeleste.tsx / CorpoCeleste.module.css
     │   ├── Cinturao.tsx / Cinturao.module.css
@@ -481,11 +502,11 @@ Essa organização segue o mesmo princípio do código React: cada componente le
 
 ### 10. API — Curiosidade do dia
 
-A página inicial mostra, logo abaixo do título, o card **"🔭 Curiosidade do dia"**. O conteúdo vem da API pública da NASA chamada **APOD** (*Astronomy Picture of the Day*), que publica todo dia um tema sobre o espaço com título e explicação. Como o texto da NASA é em inglês, ele é traduzido para o português pela API gratuita **MyMemory**, que não exige cadastro.
+A página inicial mostra, logo abaixo do título, o card **"🔭 Curiosidade do dia"**. O conteúdo vem da API pública da **Wikipédia em português**, que devolve o resumo de um artigo. Ela é gratuita, não exige chave nem cadastro, e o texto já vem em português, sem precisar de tradução.
 
 ```
-CuriosidadeDoDia.tsx  ──fetch──▶  /api/curiosidade (route.ts)  ──fetch──▶  api.nasa.gov  (texto em inglês)
-   (navegador)                       (servidor Next.js)          ──fetch──▶  api.mymemory.translated.net  (tradução)
+CuriosidadeDoDia.tsx  ──fetch──▶  /api/curiosidade (route.ts)  ──fetch──▶  pt.wikipedia.org  (resumo do artigo)
+   (navegador)                       (servidor Next.js)
 ```
 
 **a) Rota de API local — `app/api/curiosidade/route.ts`**
@@ -493,51 +514,55 @@ CuriosidadeDoDia.tsx  ──fetch──▶  /api/curiosidade (route.ts)  ──f
 No App Router, um arquivo `route.ts` dentro de `app/` cria um endereço de API. Como ele está em `app/api/curiosidade/`, responde em `/api/curiosidade`. A rota tem três partes:
 
 ```ts
-// 1. Busca o tema do dia na NASA
-async function buscarApod(): Promise<RespostaApod> {
-  "use cache";
-  cacheLife("hours");
-  const resposta = await fetch(URL_APOD);
-  if (!resposta.ok) throw new Error(`NASA respondeu ${resposta.status}`);
-  return resposta.json();
-}
+// 1. Lista de temas: um por dia, em sequência
+const TEMAS = [
+  { artigo: "Sol", titulo: "Sol" },
+  { artigo: "Mercúrio (planeta)", titulo: "Mercúrio" },
+  // ... 30 temas: planetas, luas, cometas, galáxias e missões espaciais
+];
 
-// 2. Traduz um texto do inglês para o português
-async function traduzir(texto: string): Promise<string> {
+// 2. Busca o resumo de um artigo na Wikipédia
+async function buscarResumo(artigo: string): Promise<RespostaWikipedia> {
   "use cache";
   cacheLife("days");
-  // divide o texto em blocos de até 450 bytes e traduz cada bloco na MyMemory
+  const resposta = await fetch(URL_RESUMO + encodeURIComponent(artigo), { headers: IDENTIFICACAO, signal: AbortSignal.timeout(TEMPO_LIMITE) });
+  if (!resposta.ok) throw new Error(`Wikipédia respondeu ${resposta.status}`);
+  return resposta.json();
 }
 
 // 3. Responde a quem acessar /api/curiosidade
 export async function GET() {
   await connection();
+  const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const tema = TEMAS[Math.floor(Date.parse(hoje) / 86_400_000) % TEMAS.length];
   try {
-    const apod = await buscarApod();
-    const [titulo, explicacao] = await Promise.all([traduzir(apod.title), traduzir(apod.explanation)]);
-    return Response.json({ data: apod.date, titulo, explicacao, link: ..., creditos: ... });
-  } catch {
+    const resumo = await buscarResumo(tema.artigo);
+    ultimaCuriosidade = { data: hoje, titulo: tema.titulo, explicacao: resumo.extract, link: resumo.content_urls.desktop.page };
+    return Response.json(ultimaCuriosidade);
+  } catch (erro) {
+    console.error("[api/curiosidade]", erro);
+    if (ultimaCuriosidade) return Response.json(ultimaCuriosidade);
     return Response.json({ erro: "Não foi possível buscar a curiosidade do dia." }, { status: 502 });
   }
 }
 ```
 
 - A função `GET` é chamada quando alguém acessa `/api/curiosidade`. Ela devolve um JSON no formato `Curiosidade`, definido em `app/data/tipos.ts`.
-- Por que não chamar a NASA direto do navegador? Porque a chamada usa uma **chave de API**. Feita no servidor, a chave fica escondida, e a rota entrega ao site só o que ele precisa, já em português.
-- A MyMemory aceita no máximo **500 bytes por chamada**, e a explicação da NASA costuma ser maior. Por isso `traduzir()` junta as frases em blocos de até 450 bytes, traduz os blocos ao mesmo tempo (`Promise.all`) e depois junta o resultado.
-- **Cache:** `"use cache"` + `cacheLife(...)` guardam os resultados. O tema da NASA fica guardado por algumas horas, e cada tradução fica guardada por dias, usando o próprio texto como chave. Assim o mesmo texto nunca é traduzido duas vezes, o que respeita o limite diário gratuito da MyMemory.
+- **Tema do dia:** a rota pega a data de hoje no horário de Brasília, transforma em um número de dias e usa o resto da divisão pelo tamanho da lista (`%`) para escolher o tema. Assim, todo mundo vê o mesmo tema no mesmo dia, e a lista recomeça depois do último.
+- **Por que guardar o título na lista?** Alguns artigos usam a grafia de Portugal (por exemplo, "Vénus" e "Ganímedes"). O `titulo` da lista garante que o card mostre o nome em português do Brasil.
+- **Por que passar pelo servidor, e não chamar a Wikipédia direto do navegador?** A rota escolhe o tema, guarda o resultado em cache e entrega ao site só os campos de que ele precisa. O cabeçalho `Api-User-Agent` identifica o site para a Wikimedia, como ela pede para quem usa a API.
+- **Cache:** `"use cache"` + `cacheLife("days")` guardam o resumo de cada artigo por alguns dias. Assim, a Wikipédia é consultada poucas vezes, o que respeita o limite de uso da API: quem faz muitas consultas seguidas recebe o erro `429`.
 - `await connection()` faz a rota rodar só quando é acessada, e não durante o `npm run build`, para nunca "congelar" uma resposta antiga ou de erro.
-- **Quando algo falha:** cada chamada desiste depois de 10 segundos (`AbortSignal.timeout`), e, se a NASA responder com erro interno (status 5xx), a rota tenta mais uma vez. Se a NASA ou a tradução falharem (por exemplo, limite de uso estourado), o `catch` escreve o motivo no terminal do `npm run dev` e devolve a **última curiosidade que deu certo**, guardada na variável `ultimaCuriosidade`. Só se ainda não houver nenhuma é que a rota devolve status `502`.
+- **Quando algo falha:** a chamada desiste depois de 10 segundos (`AbortSignal.timeout`). Se a Wikipédia não responder ou responder com erro, o `catch` escreve o motivo no terminal do `npm run dev` e devolve a **última curiosidade que deu certo**, guardada na variável `ultimaCuriosidade`. Só se ainda não houver nenhuma é que a rota devolve status `502`.
 
 Exemplo de resposta de `/api/curiosidade`:
 
 ```json
 {
-  "data": "2026-11-17",
-  "titulo": "Via Láctea e Aurora",
-  "explicacao": "Esses dois arcos gigantes estão lutando pelo controle do céu? ...",
-  "link": "https://apod.nasa.gov/apod/ap261117.html",
-  "creditos": "Nome do fotógrafo"
+  "data": "2026-11-23",
+  "titulo": "Ceres",
+  "explicacao": "Ceres é um planeta anão localizado no cinturão de asteroides entre Marte e Júpiter, sendo o maior dos asteroides. ...",
+  "link": "https://pt.wikipedia.org/wiki/Ceres_(planeta_an%C3%A3o)"
 }
 ```
 
@@ -556,19 +581,15 @@ export default function CuriosidadeDoDia() {
       .catch(() => setErro(true));
   }, []);
 
-  // mensagem de erro, ou "Procurando no espaço..." enquanto carrega, ou título, explicação, data e créditos
+  // mensagem de erro, ou "Procurando no espaço..." enquanto carrega, ou título, explicação, data e link
 }
 ```
 
 - Este é o uso de `useEffect` previsto na Ideação: a **obtenção de informações** quando a página é acessada. Com `[]`, o `fetch` roda uma vez, logo que o componente aparece na tela.
 - `curiosidade` começa como `null`, e enquanto isso o card mostra "Procurando no espaço...". Quando a resposta chega, `setCuriosidade` guarda os dados e o React re-renderiza o card com o título e o texto.
 - Se a rota responder com erro, `erro` vira `true` e o card mostra "Não conseguimos buscar a curiosidade agora. Tente recarregar a página daqui a pouco.", sem afetar o resto da página.
-- O rodapé do card mostra a data, os créditos, o link para a página do dia na NASA e o aviso "tradução automática".
+- O rodapé do card mostra a data, o link "Leia mais na Wikipédia" e o aviso "texto sob licença CC BY-SA". Os textos da Wikipédia podem ser reutilizados desde que a fonte e a licença sejam citadas.
 - O componente é inserido em `app/page.tsx`, logo abaixo do `<header>`.
-
-**c) Chave da NASA e e-mail da MyMemory (recomendados)**
-
-Depois de criar o arquivo, reinicie o `npm run dev`. O `.gitignore` já ignora arquivos `.env*`, então a chave e o e-mail não vão para o GitHub.
 
 ### Resumo das decisões técnicas
 
@@ -584,5 +605,5 @@ Depois de criar o arquivo, reinicie o `npm run dev`. O `.gitignore` já ignora a
 | `.map()` sobre arrays de dados | `page.tsx`, `CorpoCeleste`, página do astro | Evita repetir JSX manualmente para cada planeta, lua ou seção de conteúdo |
 | CSS Modules | `*.module.css` ao lado de cada componente | Cada componente tem seus próprios estilos, com nomes de classe únicos que não entram em conflito |
 | Condição na regra `*.css` do Turbopack | `next.config.ts` | Impede que a regra trate os `*.module.css` como CSS comum, o que deixaria as classes `undefined` |
-| Rota de API local `route.ts` | `app/api/curiosidade/route.ts` | Esconde a chave da NASA, traduz o texto para o português e, se uma API falhar, devolve a última curiosidade que deu certo |
-| `"use cache"` + `cacheLife(...)` | `app/api/curiosidade/route.ts` | O tema da NASA muda uma vez por dia e cada texto só precisa ser traduzido uma vez; o cache evita chamadas repetidas às APIs |
+| Rota de API local `route.ts` | `app/api/curiosidade/route.ts` | Escolhe o tema do dia, busca o resumo na Wikipédia e, se a API falhar, devolve a última curiosidade que deu certo |
+| `"use cache"` + `cacheLife(...)` | `app/api/curiosidade/route.ts` | O resumo de cada artigo muda pouco; o cache evita chamadas repetidas à Wikipédia e respeita o limite de uso da API |
