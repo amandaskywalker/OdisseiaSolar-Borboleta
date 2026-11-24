@@ -591,6 +591,15 @@ export default function CuriosidadeDoDia() {
 - O rodapé do card mostra a data, o link "Leia mais na Wikipédia" e o aviso "texto sob licença CC BY-SA". Os textos da Wikipédia podem ser reutilizados desde que a fonte e a licença sejam citadas.
 - O componente é inserido em `app/page.tsx`, logo abaixo do `<header>`.
 
+  ## Aprendizado
+
+
+Ao longo do desenvolvimento do projeto Odisseia Solar, nosso grupo aprofundou conhecimentos sobre desenvolvimento web utilizando Next.js, React e TypeScript. Aprendemos a importância de separar os dados da interface, organizar o código em componentes reutilizáveis e utilizar recursos como .map() e rotas dinâmicas para evitar repetições e facilitar a manutenção da aplicação. Também compreendemos como a tipagem com TypeScript contribui para uma estrutura mais organizada e reduz possíveis erros durante o desenvolvimento.
+
+Outro aprendizado importante foi a utilização dos hooks do React, como useState, useEffect e useRef, aplicados em funcionalidades como o quiz interativo, a barra de progresso e a animação do fundo estrelado. Além disso, aprendemos a trabalhar com CSS Modules, criar rotas de API e realizar requisições externas utilizando fetch. A integração com a Wikipédia para apresentar a curiosidade do dia também nos permitiu compreender conceitos como cache, tratamento de erros e comunicação entre o servidor e a interface.
+
+Por fim, o desenvolvimento do projeto nos proporcionou uma experiência prática de resolução de problemas e integração de diferentes tecnologias. Ao longo do processo, aprendemos a identificar erros, compreender configurações do Next.js, testar funcionalidades e buscar soluções para desafios que surgiram durante a implementação. Também percebemos a importância de manter o código organizado e de tomar decisões técnicas que facilitem futuras melhorias. Dessa forma, o projeto contribuiu para consolidar nossos conhecimentos e ampliar nossa autonomia no desenvolvimento de aplicações web.
+
 ### Resumo das decisões técnicas
 
 | Decisão | Onde aparece | Por quê |
